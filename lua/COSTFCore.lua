@@ -247,7 +247,7 @@ function CustomOST:_add_standard_track(track_table)
 				-- begining of the file, overwrites file completely
 				io.write('<table name="CustomOSTF">',"\n")
 				io.write('<Localization directory="loc" default="en.txt"/>',"\n")
-				io.write('<AssetUpdates id="irbizzelus/CustomOST-Fixer" provider="github" release="true" version="1.0" dont_delete="true"/>',"\n")
+				io.write('<AssetUpdates id="irbizzelus/CustomOST-Fixer" provider="github" release="true" version="1.0.1" dont_delete="true"/>',"\n")
 				CustomOST.FirstTrackDone = true
 				io.close(fixer_xml_file)
 			end
