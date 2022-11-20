@@ -1,0 +1,4 @@
+<table name="CustomOSTF">
+<Localization directory="loc" default="en.txt"/>
+<AssetUpdates id="irbizzelus/CustomOST-Fixer" provider="github" release="true" version="1.0"/>
+</table>

@@ -1,0 +1,11 @@
+{
+	"name" : "Custom OST Fixer",
+	"description" : "Converts CustomOST tracks into BeardLib music module tracks automatically.",
+	"author" : "irbizzelus\nCustomOST creator: Hugo Guerrier",
+	"contact" : "irbizzelus: Steam profile link is on my modworkshop account\nHugo Guerrier: hugogguerrier@gmail.com",
+	"version" : "1.0",
+	"hooks" : [
+		{"hook_id": "lib/setups/setup","script_path": "lua/COSTFCore.lua"},
+		{"hook_id": "lib/managers/menumanager","script_path": "lua/menumanager.lua"},
+	],
+}
