@@ -1,10 +1,15 @@
 if not CustomOST then
-	_G.CustomOST = {}
-	CustomOST.track_names = {}
-	CustomOST.activetracks = {}
-	CustomOST.newtracks = {}
-	CustomOST.warning_message = "OK"
-	CustomOST._path = ModPath
+	_G.CustomOST = {
+		track_names = {},
+		activetracks = {},
+		newtracks = {},
+		warning_message = {"OK"},
+		_path = ModPath
+	}
+else
+	if CustomOST.heist_events_table then
+		CustomOST.warning_message = {"COST_not_removed"}
+	end
 end
 
 -- Function to get all possible tracks in the specified folder
@@ -35,6 +40,8 @@ function CustomOST:load_tracks()
                 CustomOST:create_track_from_xml(track_xml_file, "mods/CustomOST_Fixer/CustomOSTTracks/" .. dir)
             else
                 log("[CustomOSTF]Cannot load the track mod " .. dir .. " track definition file does not exists")
+				table.insert(CustomOST.warning_message, "incompleteModFolder")
+				CustomOST.additonalErrorString = dir
             end
 
         end
@@ -58,6 +65,7 @@ function CustomOST:load_tracks()
 		end
     else
         log("[CustomOSTF]Custom tracks directory 'mods/CustomOST_Fixer/CustomOSTTracks/' was not found! No tracks were added.")
+		table.insert(CustomOST.warning_message, "missingCOSTF_folder")
     end
 end
 
@@ -69,15 +77,15 @@ function CustomOST:create_track_from_json (track_file, dir)
     local track_json_string = f:read("*all")
     f:close()
 
-    local valid, track_table = pcall(function () return json.decode(track_json_string) end)
-    if valid then
-        if track_table and type(track_table) == "table" then
-            track_table.dir = dir
-            track_table.fade_duration = track_table.fade_duration or nil
-            self:_add_standard_track(track_table)
-        end
+    local track_table = json.decode(track_json_string)
+	if track_table and type(track_table) == "table" then
+		track_table.dir = dir
+		track_table.fade_duration = track_table.fade_duration or nil
+		self:_add_standard_track(track_table)
     else
         log(track_file .. " JSON file is malformed")
+		table.insert(CustomOST.warning_message, "jsonFileError")
+		CustomOST.additonalErrorString = track_file
         return nil
     end
 end
@@ -88,9 +96,10 @@ function CustomOST:create_track_from_xml (track_file, dir)
     local track_xml_string = f:read("*all")
     f:close()
 
-    local valid, track_xml_table = pcall(function () return ScriptSerializer:from_custom_xml(track_xml_string) end)
-    if valid then
-
+    --local valid, track_xml_table = pcall(function () return ScriptSerializer:from_custom_xml(track_xml_string) end)
+	local track_xml_table = ScriptSerializer:from_custom_xml(track_xml_string)
+	
+	local function track_from_xml ()
         -- Prepare the localizations array
         local locs_table = {}
 
@@ -174,10 +183,17 @@ function CustomOST:create_track_from_xml (track_file, dir)
             self:_add_standard_track(track_table)
         end
 
-    else
-        log(track_file .. " XML file is malformed")
-        return nil
     end
+	
+	local valid, result = pcall(function () return track_from_xml() end)
+	if valid then
+		-- nothing
+	else
+		log(track_file .. " XML file is malformed")
+		table.insert(CustomOST.warning_message, "xmlFileError")
+		CustomOST.additonalErrorString = track_file
+		return nil
+	end
 end
 
 -- probably will never use, buuuuuuuuut leave it just in case. needs more work
@@ -247,7 +263,7 @@ function CustomOST:_add_standard_track(track_table)
 				-- begining of the file, overwrites file completely
 				io.write('<table name="CustomOSTF">',"\n")
 				io.write('<Localization directory="loc" default="en.txt"/>',"\n")
-				io.write('<AssetUpdates id="irbizzelus/CustomOST-Fixer" provider="github" release="true" version="1.0.1" dont_delete="true"/>',"\n")
+				io.write('<AssetUpdates id="irbizzelus/CustomOST-Fixer" provider="github" release="true" version="1.1" dont_delete="true"/>',"\n")
 				CustomOST.FirstTrackDone = true
 				io.close(fixer_xml_file)
 			end
@@ -316,41 +332,45 @@ function CustomOST:_add_standard_track(track_table)
 	end
 end
 
-CustomOST.load_tracks()
 
--- after tracks are loaded create en.txt file
-local file = io.open(CustomOST._path.."loc/en.txt", 'w+')
-if file then
-	CustomOST.translations = {}
-	for id, name in pairs(CustomOST.track_names) do
-		CustomOST.translations["menu_jukebox_"..id] = CustomOST.track_names[id]
-		CustomOST.translations["menu_jukebox_screen_"..id] = CustomOST.track_names[id]
+if CustomOST.warning_message[1] ~= "COST_not_removed" then
+	
+	CustomOST.load_tracks()
+
+	-- after tracks are loaded create en.txt file
+	local file = io.open(CustomOST._path.."loc/en.txt", 'w+')
+	if file then
+		CustomOST.translations = {}
+		for id, name in pairs(CustomOST.track_names) do
+			CustomOST.translations["menu_jukebox_"..id] = CustomOST.track_names[id]
+			CustomOST.translations["menu_jukebox_screen_"..id] = CustomOST.track_names[id]
+		end
+		file:write(json.encode(CustomOST.translations))
+		file:close()
 	end
-	file:write(json.encode(CustomOST.translations))
-	file:close()
-end
 
--- write down all track names from newely created file into a list to compare later
-local loc_file_new = io.open(CustomOST._path.."loc/en.txt", 'r')
-if loc_file_new then
-	for k, v in pairs(json.decode(loc_file_new:read('*all')) or {}) do
-		if not CustomOST.newtracks[v] then
-			CustomOST.newtracks[v] = true
+	-- write down all track names from newely created file into a list to compare later
+	local loc_file_new = io.open(CustomOST._path.."loc/en.txt", 'r')
+	if loc_file_new then
+		for k, v in pairs(json.decode(loc_file_new:read('*all')) or {}) do
+			if not CustomOST.newtracks[v] then
+				CustomOST.newtracks[v] = true
+			end
 		end
 	end
-end
-io.close(loc_file_new)
+	io.close(loc_file_new)
 
--- check for added files
-for name, exists in pairs(CustomOST.newtracks) do
-	if not CustomOST.activetracks[name] then
-		CustomOST.warning_message = "addition"
+	-- check for added files
+	for name, exists in pairs(CustomOST.newtracks) do
+		if not CustomOST.activetracks[name] then
+			table.insert(CustomOST.warning_message, "addition")
+		end
 	end
-end
 
--- check for removed files
-for name, exists in pairs(CustomOST.activetracks) do
-	if not CustomOST.newtracks[name] then
-		CustomOST.warning_message = "removal"
+	-- check for removed files
+	for name, exists in pairs(CustomOST.activetracks) do
+		if not CustomOST.newtracks[name] then
+			table.insert(CustomOST.warning_message, "removal")
+		end
 	end
 end
