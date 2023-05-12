@@ -58,7 +58,7 @@ function CustomOST:load_tracks()
 		
 		-- end our xml file
 		local fixer_xml_file = io.open(CustomOST._path.."main.xml", 'a+')
-		if fixer_xml_file then
+		if fixer_xml_file and CustomOST.FirstTrackDone then
 			io.output(fixer_xml_file)
 			io.write('</table>',"\n")
 			io.close(fixer_xml_file)
@@ -263,7 +263,7 @@ function CustomOST:_add_standard_track(track_table)
 				-- begining of the file, overwrites file completely
 				io.write('<table name="CustomOSTF">',"\n")
 				io.write('<Localization directory="loc" default="en.txt"/>',"\n")
-				io.write('<AssetUpdates id="irbizzelus/CustomOST-Fixer" provider="github" release="true" version="1.1" dont_delete="true"/>',"\n")
+				io.write('<AssetUpdates id="irbizzelus/CustomOST-Fixer" provider="github" release="true" version="1.11" dont_delete="true"/>',"\n")
 				CustomOST.FirstTrackDone = true
 				io.close(fixer_xml_file)
 			end
